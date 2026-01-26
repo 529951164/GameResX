@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAppStore } from '@/stores/useAppStore'
 import { ImageIcon, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
+import { PromptPanel } from './PromptPanel'
 
 export function CompareView() {
   const { selectedImage } = useAppStore()
@@ -131,8 +132,8 @@ export function CompareView() {
         </div>
       </div>
 
-      {/* 对比区域 */}
-      <div className="flex-1 flex">
+      {/* 对比区域 - 75% */}
+      <div className="flex-[3] flex overflow-hidden">
         {/* 原始图 */}
         <div
           ref={containerRef}
@@ -181,6 +182,11 @@ export function CompareView() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 提示词面板 - 25% */}
+      <div className="flex-1 overflow-hidden">
+        <PromptPanel image={selectedImage} />
       </div>
     </div>
   )

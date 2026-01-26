@@ -1,14 +1,17 @@
+import { useState } from 'react'
 import { ThreeColumnLayout } from '@/components/layout/ThreeColumnLayout'
 import { FolderTree } from '@/components/sidebar/FolderTree'
 import { FileList } from '@/components/filelist/FileList'
 import { CompareView } from '@/components/preview/CompareView'
+import { ProjectConfigDialog } from '@/components/dialogs/ProjectConfigDialog'
 import { useAppStore } from '@/stores/useAppStore'
 import { useFileSystem } from '@/hooks/useFileSystem'
-import { FolderOpen } from 'lucide-react'
+import { FolderOpen, Settings } from 'lucide-react'
 
 function App() {
-  const { rootPath, isLoading } = useAppStore()
+  const { rootPath, isLoading, projectConfig } = useAppStore()
   const { selectRootDirectory } = useFileSystem()
+  const [showConfigDialog, setShowConfigDialog] = useState(false)
 
   return (
     <div className="h-full flex flex-col bg-app-bg">
@@ -17,14 +20,27 @@ function App() {
         <div className="w-20" /> {/* macOS 红绿灯按钮占位 */}
         <h1 className="text-sm font-medium text-text-primary">GameResX</h1>
         <div className="flex-1" />
-        <button
-          onClick={selectRootDirectory}
-          disabled={isLoading}
-          className="titlebar-no-drag flex items-center gap-2 px-3 py-1.5 text-sm text-text-primary bg-content-bg hover:bg-hover rounded border border-border transition-colors disabled:opacity-50"
-        >
-          <FolderOpen size={16} />
-          {rootPath ? '切换目录' : '选择目录'}
-        </button>
+        
+        {/* 右侧按钮组 */}
+        <div className="titlebar-no-drag flex items-center gap-2">
+          {rootPath && projectConfig && (
+            <button
+              onClick={() => setShowConfigDialog(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-text-primary bg-content-bg hover:bg-hover rounded border border-border transition-colors"
+            >
+              <Settings size={16} />
+              项目配置
+            </button>
+          )}
+          <button
+            onClick={selectRootDirectory}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-text-primary bg-content-bg hover:bg-hover rounded border border-border transition-colors disabled:opacity-50"
+          >
+            <FolderOpen size={16} />
+            {rootPath ? '切换目录' : '选择目录'}
+          </button>
+        </div>
       </div>
 
       {/* 主内容区域 */}
@@ -39,6 +55,9 @@ function App() {
           />
         )}
       </div>
+
+      {/* 项目配置弹窗 */}
+      <ProjectConfigDialog isOpen={showConfigDialog} onClose={() => setShowConfigDialog(false)} />
     </div>
   )
 }

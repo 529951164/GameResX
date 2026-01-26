@@ -1,26 +1,49 @@
 import { useLazyImage } from '@/hooks/useLazyImage'
-import { ImageIcon } from 'lucide-react'
+import { ImageIcon, Tag, Check } from 'lucide-react'
+import { useAppStore } from '@/stores/useAppStore'
 import type { ImageFile } from '@/types'
 
 interface FileItemProps {
   image: ImageFile
   isSelected: boolean
   onClick: () => void
+  onContextMenu?: (e: React.MouseEvent, image: ImageFile) => void
 }
 
-export function FileItem({ image, isSelected, onClick }: FileItemProps) {
+export function FileItem({ image, isSelected, onClick, onContextMenu }: FileItemProps) {
   const { ref, src, isLoading } = useLazyImage(image.path)
+  const { projectConfig } = useAppStore()
+
+  const metadata = projectConfig?.imageMetadata[image.path]
+  const tagType = metadata?.tagType
+  const isCompleted = metadata?.isCompleted || false
 
   return (
     <div
       ref={ref}
       onClick={onClick}
-      className={`cursor-pointer rounded-lg overflow-hidden transition-all ${
+      onContextMenu={(e) => onContextMenu?.(e, image)}
+      className={`cursor-pointer rounded-lg overflow-hidden transition-all relative ${
         isSelected
           ? 'ring-2 ring-accent bg-accent/20'
           : 'hover:bg-hover border border-border'
       }`}
     >
+      {/* 标签和状态标识 */}
+      <div className="absolute top-1 left-1 flex gap-1 z-10">
+        {tagType && (
+          <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-accent/80 text-white text-[10px] rounded backdrop-blur-sm">
+            <Tag size={8} />
+            {tagType}
+          </div>
+        )}
+        {isCompleted && (
+          <div className="flex items-center px-1 py-0.5 bg-green-500/80 text-white rounded backdrop-blur-sm">
+            <Check size={10} />
+          </div>
+        )}
+      </div>
+
       {/* 小图对比区域 */}
       <div className="flex gap-1 p-2">
         {/* 原始图 */}

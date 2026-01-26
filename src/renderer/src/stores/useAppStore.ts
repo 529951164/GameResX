@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { TreeNode, ImageFile } from '@/types'
+import type { TreeNode, ImageFile, ProjectConfig, ImageMetadata } from '@/types'
 
 interface AppState {
   // 根目录路径
@@ -16,6 +16,8 @@ interface AppState {
   expandedFolders: Set<string>
   // 加载状态
   isLoading: boolean
+  // 项目配置
+  projectConfig: ProjectConfig | null
 
   // Actions
   setRootPath: (path: string | null) => void
@@ -25,6 +27,9 @@ interface AppState {
   setSelectedImage: (image: ImageFile | null) => void
   toggleFolderExpanded: (folderId: string) => void
   setIsLoading: (loading: boolean) => void
+  setProjectConfig: (config: ProjectConfig | null) => void
+  updateImageMetadata: (imagePath: string, metadata: Partial<ImageMetadata>) => void
+  updateGlobalPrompt: (prompt: string) => void
   reset: () => void
 }
 
@@ -35,7 +40,8 @@ const initialState = {
   imageList: [],
   selectedImage: null,
   expandedFolders: new Set<string>(),
-  isLoading: false
+  isLoading: false,
+  projectConfig: null
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -63,6 +69,48 @@ export const useAppStore = create<AppState>((set) => ({
     }),
 
   setIsLoading: (loading) => set({ isLoading: loading }),
+
+  setProjectConfig: (config) => set({ projectConfig: config }),
+
+  updateImageMetadata: (imagePath, metadata) =>
+    set((state) => {
+      if (!state.projectConfig) return state
+
+      const newConfig = { ...state.projectConfig }
+      const currentMeta = newConfig.imageMetadata[imagePath] || {
+        tagType: null,
+        customPrompt: '',
+        isCompleted: false,
+        generatedImagePath: null
+      }
+
+      newConfig.imageMetadata[imagePath] = {
+        ...currentMeta,
+        ...metadata
+      }
+
+      // 更新统计
+      newConfig.statistics.completedImages = Object.values(newConfig.imageMetadata).filter(
+        (meta) => meta.isCompleted
+      ).length
+
+      return { projectConfig: newConfig }
+    }),
+
+  updateGlobalPrompt: (prompt) =>
+    set((state) => {
+      if (!state.projectConfig) return state
+
+      return {
+        projectConfig: {
+          ...state.projectConfig,
+          globalSettings: {
+            ...state.projectConfig.globalSettings,
+            globalPrompt: prompt
+          }
+        }
+      }
+    }),
 
   reset: () => set(initialState)
 }))

@@ -2,7 +2,6 @@
   "name": "gameresx",
   "version": "1.0.0",
   "description": "游戏美术资源对比工具",
-  "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",

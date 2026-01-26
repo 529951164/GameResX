@@ -6,6 +6,8 @@ export interface TreeNode {
   path: string
   children: TreeNode[]
   hasImages: boolean
+  isEmpty: boolean
+  imageCount: number
 }
 
 export interface ImageFile {
@@ -13,6 +15,42 @@ export interface ImageFile {
   name: string
   path: string
   extension: string
+}
+
+export interface ProjectConfig {
+  version: string
+  projectName: string
+  rootPath: string
+  createdAt: string
+  updatedAt: string
+  globalSettings: {
+    globalPrompt: string
+    customTagTypes: string[]
+  }
+  statistics: {
+    totalImages: number
+    completedImages: number
+    emptyFolders: string[]
+  }
+  imageMetadata: Record<string, ImageMetadata>
+  folderMetadata: Record<string, FolderMetadata>
+}
+
+export interface ImageMetadata {
+  tagType: string | null
+  customPrompt: string
+  isCompleted: boolean
+  generatedImagePath: string | null
+}
+
+export interface FolderMetadata {
+  defaultTagType: string | null
+}
+
+export interface Statistics {
+  totalImages: number
+  completedImages: number
+  emptyFolders: string[]
 }
 
 const api = {
@@ -34,6 +72,45 @@ const api = {
   // 读取图片为 base64
   readImageAsBase64: (imagePath: string): Promise<string> => {
     return ipcRenderer.invoke('fs:readImageAsBase64', imagePath)
+  },
+
+  // 项目配置
+  loadProjectConfig: (rootPath: string): Promise<ProjectConfig> => {
+    return ipcRenderer.invoke('project:load', rootPath)
+  },
+
+  saveProjectConfig: (config: ProjectConfig): Promise<void> => {
+    return ipcRenderer.invoke('project:save', config)
+  },
+
+  refreshStatistics: (rootPath: string): Promise<Statistics> => {
+    return ipcRenderer.invoke('project:refreshStats', rootPath)
+  },
+
+  // 元数据管理
+  updateImageMetadata: (
+    rootPath: string,
+    imagePath: string,
+    metadata: Partial<ImageMetadata>
+  ): Promise<void> => {
+    return ipcRenderer.invoke('project:updateImageMetadata', rootPath, imagePath, metadata)
+  },
+
+  batchUpdateFolderImages: (rootPath: string, folderPath: string, tagType: string): Promise<number> => {
+    return ipcRenderer.invoke('project:batchUpdateFolder', rootPath, folderPath, tagType)
+  },
+
+  updateFolderMetadata: (
+    rootPath: string,
+    folderPath: string,
+    metadata: Partial<FolderMetadata>
+  ): Promise<void> => {
+    return ipcRenderer.invoke('project:updateFolderMetadata', rootPath, folderPath, metadata)
+  },
+
+  // 系统操作
+  openInExplorer: (path: string): Promise<void> => {
+    return ipcRenderer.invoke('system:openInExplorer', path)
   }
 }
 

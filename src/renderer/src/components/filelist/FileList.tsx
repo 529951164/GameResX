@@ -1,9 +1,22 @@
 import { useAppStore } from '@/stores/useAppStore'
+import { useContextMenu } from '@/hooks/useContextMenu'
+import { ContextMenu } from '@/components/common/ContextMenu'
+import { useImageContextMenu } from '@/components/menus/ImageContextMenu'
 import { FileItem } from './FileItem'
 import { ImageOff } from 'lucide-react'
 
 export function FileList() {
   const { imageList, selectedImage, selectedFolderPath, setSelectedImage } = useAppStore()
+  const { menuPosition, menuType, menuData, showMenu, hideMenu } = useContextMenu()
+
+  const handleContextMenu = (e: React.MouseEvent, image: any) => {
+    showMenu(e, 'image', image)
+  }
+
+  const imageMenuItems = useImageContextMenu({
+    image: menuData,
+    onClose: hideMenu
+  })
 
   if (!selectedFolderPath) {
     return (
@@ -28,15 +41,22 @@ export function FileList() {
   }
 
   return (
-    <div className="p-2 grid grid-cols-2 gap-2">
-      {imageList.map((image) => (
-        <FileItem
-          key={image.id}
-          image={image}
-          isSelected={selectedImage?.id === image.id}
-          onClick={() => setSelectedImage(image)}
-        />
-      ))}
-    </div>
+    <>
+      <div className="p-2 grid grid-cols-2 gap-2">
+        {imageList.map((image) => (
+          <FileItem
+            key={image.id}
+            image={image}
+            isSelected={selectedImage?.id === image.id}
+            onClick={() => setSelectedImage(image)}
+            onContextMenu={handleContextMenu}
+          />
+        ))}
+      </div>
+
+      {menuPosition && menuType === 'image' && menuData && (
+        <ContextMenu position={menuPosition} items={imageMenuItems} onClose={hideMenu} />
+      )}
+    </>
   )
 }

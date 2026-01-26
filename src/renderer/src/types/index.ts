@@ -5,6 +5,8 @@ export interface TreeNode {
   children: TreeNode[]
   hasImages: boolean
   isExpanded?: boolean
+  isEmpty: boolean
+  imageCount: number
 }
 
 export interface ImageFile {
@@ -12,4 +14,41 @@ export interface ImageFile {
   name: string
   path: string
   extension: string
+  metadata?: ImageMetadata
+}
+
+export interface ProjectConfig {
+  version: string
+  projectName: string
+  rootPath: string
+  createdAt: string
+  updatedAt: string
+  globalSettings: {
+    globalPrompt: string
+    customTagTypes: string[]
+  }
+  statistics: {
+    totalImages: number
+    completedImages: number
+    emptyFolders: string[]
+  }
+  imageMetadata: Record<string, ImageMetadata>
+  folderMetadata: Record<string, FolderMetadata>
+}
+
+export interface ImageMetadata {
+  tagType: string | null
+  customPrompt: string
+  isCompleted: boolean
+  generatedImagePath: string | null
+}
+
+export interface FolderMetadata {
+  defaultTagType: string | null
+}
+
+export interface Statistics {
+  totalImages: number
+  completedImages: number
+  emptyFolders: string[]
 }

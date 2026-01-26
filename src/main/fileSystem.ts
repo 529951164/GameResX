@@ -15,6 +15,8 @@ export interface TreeNode {
   path: string
   children: TreeNode[]
   hasImages: boolean
+  isEmpty: boolean
+  imageCount: number
 }
 
 export interface ImageFile {
@@ -26,11 +28,18 @@ export interface ImageFile {
 
 // 扫描目录，构建树状结构
 export async function scanDirectory(rootPath: string): Promise<TreeNode[]> {
-  async function buildTree(dirPath: string): Promise<TreeNode | null> {
+  console.log('[FS] Starting scan of:', rootPath)
+  
+  async function buildTree(dirPath: string, depth: number = 0): Promise<TreeNode | null> {
+    if (depth === 0) {
+      console.log('[FS] Building tree for root:', dirPath)
+    }
+    
     try {
       const entries = await readdir(dirPath, { withFileTypes: true })
       const children: TreeNode[] = []
       let hasImages = false
+      let imageCount = 0
 
       for (const entry of entries) {
         // 跳过隐藏文件和文件夹
@@ -39,33 +48,41 @@ export async function scanDirectory(rootPath: string): Promise<TreeNode[]> {
         const fullPath = join(dirPath, entry.name)
 
         if (entry.isDirectory()) {
-          const childNode = await buildTree(fullPath)
-          if (childNode && (childNode.hasImages || childNode.children.length > 0)) {
+          const childNode = await buildTree(fullPath, depth + 1)
+          if (childNode) {
             children.push(childNode)
             if (childNode.hasImages) hasImages = true
+            imageCount += childNode.imageCount
           }
         } else if (entry.isFile() && isImageFile(entry.name)) {
           hasImages = true
+          imageCount++
         }
       }
 
       // 按名称排序
       children.sort((a, b) => a.name.localeCompare(b.name))
 
+      // 判断是否为空文件夹（有子文件夹但没有图片）
+      const isEmpty = children.length > 0 && !hasImages
+
       return {
         id: dirPath,
         name: basename(dirPath),
         path: dirPath,
         children,
-        hasImages
+        hasImages,
+        isEmpty,
+        imageCount
       }
     } catch (error) {
-      console.error(`Error scanning directory ${dirPath}:`, error)
+      console.error(`[FS] Error scanning directory ${dirPath}:`, error)
       return null
     }
   }
 
   const rootNode = await buildTree(rootPath)
+  console.log('[FS] Scan completed, nodes:', rootNode ? 1 : 0)
   return rootNode ? [rootNode] : []
 }
 
