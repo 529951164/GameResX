@@ -14,6 +14,13 @@ import {
   type ImageMetadata,
   type FolderMetadata
 } from './projectConfig'
+import { checkProjectGitignore, addGitignoreRules } from './gitignore'
+import { generateAndReplace, generateFolderImages } from './imageGenerate'
+import { restoreImage, hasBackup, getOriginalImagePath, backupImage } from './imageReplace'
+import { getImageDimensions, resizeImage } from './imageProcessor'
+import { backupAllImages, backupFolderImages } from './backupManager'
+import * as googleImagen from './aiModels/googleImagen'
+import { listAvailableModels } from './aiModels/listModels'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -132,6 +139,95 @@ app.whenReady().then(() => {
   ipcMain.handle('system:openInExplorer', async (_, path: string) => {
     shell.showItemInFolder(path)
   })
+
+  // IPC 处理器 - GitIgnore 管理
+  ipcMain.handle('gitignore:check', async (_, projectPath: string) => {
+    console.log('[IPC] gitignore:check called for:', projectPath)
+    return await checkProjectGitignore(projectPath)
+  })
+
+  ipcMain.handle('gitignore:add', async (_, gitignorePath: string) => {
+    console.log('[IPC] gitignore:add called for:', gitignorePath)
+    return await addGitignoreRules(gitignorePath)
+  })
+
+  // IPC 处理器 - AI 生图
+  ipcMain.handle('ai:generateImage', async (_, projectRootPath: string, imagePath: string, customPrompt?: string, modelOverride?: string) => {
+    console.log('[IPC] ai:generateImage called for:', imagePath)
+    console.log('[IPC] Model override:', modelOverride)
+    return await generateAndReplace(projectRootPath, imagePath, customPrompt, modelOverride)
+  })
+
+  ipcMain.handle('ai:testApiKey', async (_, provider: string, apiKey: string) => {
+    console.log('[IPC] ai:testApiKey called for provider:', provider)
+    if (provider === 'google-imagen') {
+      return await googleImagen.testApiKey(apiKey)
+    }
+    return false
+  })
+
+  ipcMain.handle('ai:listModels', async (_, apiKey: string) => {
+    console.log('[IPC] ai:listModels called')
+    return await listAvailableModels(apiKey)
+  })
+
+  // IPC 处理器 - 图片备份
+  ipcMain.handle('image:restore', async (_, imagePath: string) => {
+    console.log('[IPC] image:restore called for:', imagePath)
+    return await restoreImage(imagePath)
+  })
+
+  ipcMain.handle('image:hasBackup', async (_, imagePath: string) => {
+    return hasBackup(imagePath)
+  })
+
+  ipcMain.handle('image:backup', async (_, imagePath: string) => {
+    console.log('[IPC] image:backup called for:', imagePath)
+    return await backupImage(imagePath)
+  })
+
+  ipcMain.handle('backup:all', async (_, rootPath: string) => {
+    console.log('[IPC] backup:all called for:', rootPath)
+    return await backupAllImages(rootPath)
+  })
+
+  ipcMain.handle('backup:folder', async (_, folderPath: string) => {
+    console.log('[IPC] backup:folder called for:', folderPath)
+    return await backupFolderImages(folderPath)
+  })
+
+  ipcMain.handle('image:getDimensions', async (_, imagePath: string) => {
+    console.log('[IPC] image:getDimensions called for:', imagePath)
+    return await getImageDimensions(imagePath)
+  })
+
+  ipcMain.handle('image:getOriginalDimensions', async (_, imagePath: string) => {
+    console.log('[IPC] image:getOriginalDimensions called for:', imagePath)
+    const originalPath = getOriginalImagePath(imagePath)
+    return await getImageDimensions(originalPath)
+  })
+
+  ipcMain.handle(
+    'image:resizeToOriginal',
+    async (_, imagePath: string, targetWidth: number, targetHeight: number) => {
+      console.log(
+        `[IPC] image:resizeToOriginal called for: ${imagePath} -> ${targetWidth}x${targetHeight}`
+      )
+      try {
+        // 创建临时缩放文件
+        const tempPath = imagePath + '.resize_temp'
+        await resizeImage(imagePath, tempPath, targetWidth, targetHeight)
+
+        // 替换当前图片
+        await replaceImage(imagePath, tempPath)
+
+        return { success: true, message: '缩放成功' }
+      } catch (error: any) {
+        console.error('[IPC] Resize failed:', error)
+        return { success: false, message: error.message }
+      }
+    }
+  )
 
   createWindow()
 

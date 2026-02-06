@@ -27,6 +27,11 @@ export interface ProjectConfig {
     globalPrompt: string
     customTagTypes: string[]
   }
+  aiSettings: {
+    provider: string
+    apiKey: string
+    model: string
+  }
   statistics: {
     totalImages: number
     completedImages: number

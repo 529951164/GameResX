@@ -132,8 +132,8 @@ export function CompareView() {
         </div>
       </div>
 
-      {/* 对比区域 - 75% */}
-      <div className="flex-[3] flex overflow-hidden">
+      {/* 对比区域 - 40% */}
+      <div className="flex-[2] flex overflow-hidden">
         {/* 原始图 */}
         <div
           ref={containerRef}
@@ -184,8 +184,8 @@ export function CompareView() {
         </div>
       </div>
 
-      {/* 提示词面板 - 25% */}
-      <div className="flex-1 overflow-hidden">
+      {/* 提示词面板 - 60% */}
+      <div className="flex-[3] overflow-hidden min-h-0">
         <PromptPanel image={selectedImage} />
       </div>
     </div>

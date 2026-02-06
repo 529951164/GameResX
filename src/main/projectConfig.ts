@@ -16,6 +16,11 @@ export interface ProjectConfig {
     globalPrompt: string
     customTagTypes: string[]
   }
+  aiSettings: {
+    provider: string // 'google-imagen' | 'openai' | 'claude' | 'aliyun-tongyi'
+    apiKey: string
+    model: string
+  }
   statistics: {
     totalImages: number
     completedImages: number
@@ -49,6 +54,11 @@ function createDefaultConfig(rootPath: string): ProjectConfig {
       globalPrompt: '',
       customTagTypes: ['UI类', 'Icon类', '普通类']
     },
+    aiSettings: {
+      provider: 'google-imagen',
+      apiKey: 'AIzaSyCXMn1JrOgE3UdHIXhpcj2LPO3kMGeD8KA',
+      model: 'gemini-2.5-flash-image'
+    },
     statistics: {
       totalImages: 0,
       completedImages: 0,
@@ -81,15 +91,18 @@ export async function loadProjectConfig(rootPath: string): Promise<ProjectConfig
       const content = await readFile(configPath, 'utf-8')
       const config = JSON.parse(content) as ProjectConfig
 
-      // 验证版本
-      if (config.version !== CONFIG_VERSION) {
-        console.log('Config version mismatch, upgrading...')
+      // 验证版本并升级配置
+      if (config.version !== CONFIG_VERSION || !config.aiSettings) {
+        console.log('Config version mismatch or missing fields, upgrading...')
         // 简单升级：保留用户数据，更新结构
+        const defaultConfig = createDefaultConfig(rootPath)
         const upgraded = {
-          ...createDefaultConfig(rootPath),
+          ...defaultConfig,
           ...config,
           version: CONFIG_VERSION,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          // 确保 aiSettings 存在
+          aiSettings: config.aiSettings || defaultConfig.aiSettings
         }
         await saveProjectConfig(upgraded)
         return upgraded

@@ -1,4 +1,4 @@
-import { Tag, Copy, FolderOpen, RefreshCw } from 'lucide-react'
+import { Tag, Copy, FolderOpen, RefreshCw, Shield } from 'lucide-react'
 import type { MenuItem } from '@/components/common/ContextMenu'
 import type { TreeNode } from '@/types'
 import { useAppStore } from '@/stores/useAppStore'
@@ -53,6 +53,32 @@ export function useFolderContextMenu({
     onClose()
   }
 
+  const handleBackupFolder = async () => {
+    if (!folder) return
+
+    if (!confirm(`确定要备份文件夹 "${folder.name}" 下的所有图片吗？`)) {
+      return
+    }
+
+    try {
+      const result = await window.api.backupFolderImages(folder.path)
+
+      alert(
+        `备份完成！\n\n` +
+          `总计: ${result.total} 张\n` +
+          `成功: ${result.success} 张\n` +
+          `跳过: ${result.skipped} 张 (已有备份)\n` +
+          `失败: ${result.failed} 张`
+      )
+
+      onRefresh?.()
+    } catch (error: any) {
+      alert(`备份失败：${error.message}`)
+    } finally {
+      onClose()
+    }
+  }
+
   return [
     {
       id: 'batch-set-tag',
@@ -71,6 +97,18 @@ export function useFolderContextMenu({
       divider: true
     },
     {
+      id: 'backup-folder',
+      label: '备份文件夹图片',
+      icon: <Shield size={16} />,
+      disabled: !folder.hasImages,
+      onClick: handleBackupFolder
+    },
+    {
+      id: 'divider-2',
+      label: '',
+      divider: true
+    },
+    {
       id: 'copy-path',
       label: '复制文件夹路径',
       icon: <Copy size={16} />,
@@ -83,7 +121,7 @@ export function useFolderContextMenu({
       onClick: handleOpenInExplorer
     },
     {
-      id: 'divider-2',
+      id: 'divider-3',
       label: '',
       divider: true
     },

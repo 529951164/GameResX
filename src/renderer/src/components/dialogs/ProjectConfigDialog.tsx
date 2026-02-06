@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, RefreshCw, Plus, Trash2 } from 'lucide-react'
+import { X, RefreshCw, Plus, Trash2, List } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import type { ProjectConfig } from '@/types'
 
@@ -14,10 +14,21 @@ export function ProjectConfigDialog({ isOpen, onClose }: ProjectConfigDialogProp
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showEmptyFolders, setShowEmptyFolders] = useState(false)
   const [newTagType, setNewTagType] = useState('')
+  const [availableModels, setAvailableModels] = useState<string[]>([])
+  const [showModels, setShowModels] = useState(false)
 
   useEffect(() => {
     if (isOpen && projectConfig) {
-      setLocalConfig(JSON.parse(JSON.stringify(projectConfig)))
+      const config = JSON.parse(JSON.stringify(projectConfig))
+      // 确保 aiSettings 存在（兼容旧配置）
+      if (!config.aiSettings) {
+        config.aiSettings = {
+          provider: 'google-imagen',
+          apiKey: 'AIzaSyCfEzcJCdJxgMGJmZQReaPuM49jn62e-sA',
+          model: 'imagen-4'
+        }
+      }
+      setLocalConfig(config)
     }
   }, [isOpen, projectConfig])
 
@@ -70,6 +81,24 @@ export function ProjectConfigDialog({ isOpen, onClose }: ProjectConfigDialogProp
         customTagTypes: localConfig.globalSettings.customTagTypes.filter((t) => t !== tag)
       }
     })
+  }
+
+  const handleListModels = async () => {
+    if (!localConfig?.aiSettings?.apiKey) {
+      alert('请先输入 API Key')
+      return
+    }
+
+    setIsRefreshing(true)
+    try {
+      const models = await window.api.listAvailableModels(localConfig.aiSettings.apiKey)
+      setAvailableModels(models)
+      setShowModels(true)
+    } catch (error: any) {
+      alert(`获取模型列表失败: ${error.message}`)
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   const completionRate =
@@ -164,6 +193,97 @@ export function ProjectConfigDialog({ isOpen, onClose }: ProjectConfigDialogProp
                       {folder}
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* AI 设置 */}
+          <section>
+            <h3 className="text-sm font-medium text-text-primary mb-3">AI 生图设置</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">AI 提供商</label>
+                <select
+                  value={localConfig.aiSettings?.provider || 'google-imagen'}
+                  onChange={(e) =>
+                    setLocalConfig({
+                      ...localConfig,
+                      aiSettings: { ...(localConfig.aiSettings || {}), provider: e.target.value }
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-app-bg text-text-primary text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="google-imagen">Google Imagen</option>
+                  <option value="openai" disabled>OpenAI (待实现)</option>
+                  <option value="claude" disabled>Claude (待实现)</option>
+                  <option value="aliyun-tongyi" disabled>阿里通义 (待实现)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">API Key</label>
+                <input
+                  type="password"
+                  value={localConfig.aiSettings?.apiKey || ''}
+                  onChange={(e) =>
+                    setLocalConfig({
+                      ...localConfig,
+                      aiSettings: { ...(localConfig.aiSettings || {}), apiKey: e.target.value }
+                    })
+                  }
+                  placeholder="AIzaSyCfEzcJCdJxgMGJmZQReaPuM49jn62e-sA"
+                  className="w-full px-3 py-2 bg-app-bg text-text-primary text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-secondary mb-1">模型名称</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={localConfig.aiSettings?.model || 'gemini-2.5-flash-image'}
+                    onChange={(e) =>
+                      setLocalConfig({
+                        ...localConfig,
+                        aiSettings: { ...(localConfig.aiSettings || {}), model: e.target.value }
+                      })
+                    }
+                    placeholder="gemini-2.5-flash-image"
+                    className="flex-1 px-3 py-2 bg-app-bg text-text-primary text-sm border border-border rounded focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
+                  <button
+                    onClick={handleListModels}
+                    disabled={isRefreshing}
+                    className="flex items-center gap-1 px-3 py-2 bg-app-bg hover:bg-hover text-text-primary text-sm border border-border rounded transition-colors disabled:opacity-50"
+                  >
+                    <List size={14} />
+                    查看可用
+                  </button>
+                </div>
+              </div>
+
+              {/* 可用模型列表 */}
+              {showModels && availableModels.length > 0 && (
+                <div className="p-3 bg-app-bg border border-border rounded max-h-40 overflow-y-auto">
+                  <div className="text-xs text-text-secondary mb-2">
+                    可用模型 ({availableModels.length}):
+                  </div>
+                  <div className="space-y-1">
+                    {availableModels.map((model, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setLocalConfig({
+                            ...localConfig,
+                            aiSettings: { ...(localConfig.aiSettings || {}), model }
+                          })
+                          setShowModels(false)
+                        }}
+                        className="w-full text-left px-2 py-1 text-xs text-text-primary hover:bg-hover rounded transition-colors font-mono"
+                      >
+                        {model}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

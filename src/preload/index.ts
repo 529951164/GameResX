@@ -27,6 +27,11 @@ export interface ProjectConfig {
     globalPrompt: string
     customTagTypes: string[]
   }
+  aiSettings: {
+    provider: string
+    apiKey: string
+    model: string
+  }
   statistics: {
     totalImages: number
     completedImages: number
@@ -111,6 +116,62 @@ const api = {
   // 系统操作
   openInExplorer: (path: string): Promise<void> => {
     return ipcRenderer.invoke('system:openInExplorer', path)
+  },
+
+  // GitIgnore 管理
+  checkGitignore: (projectPath: string): Promise<{ needsConfig: boolean; gitignorePath: string | null }> => {
+    return ipcRenderer.invoke('gitignore:check', projectPath)
+  },
+
+  addGitignoreRules: (gitignorePath: string): Promise<void> => {
+    return ipcRenderer.invoke('gitignore:add', gitignorePath)
+  },
+
+  // AI 生图
+  generateImage: (projectRootPath: string, imagePath: string, customPrompt?: string, modelOverride?: string): Promise<{ success: boolean; message: string; dimensionInfo?: any }> => {
+    return ipcRenderer.invoke('ai:generateImage', projectRootPath, imagePath, customPrompt, modelOverride)
+  },
+
+  testApiKey: (provider: string, apiKey: string): Promise<boolean> => {
+    return ipcRenderer.invoke('ai:testApiKey', provider, apiKey)
+  },
+
+  listAvailableModels: (apiKey: string): Promise<string[]> => {
+    return ipcRenderer.invoke('ai:listModels', apiKey)
+  },
+
+  // 图片备份
+  restoreImage: (imagePath: string): Promise<boolean> => {
+    return ipcRenderer.invoke('image:restore', imagePath)
+  },
+
+  hasBackup: (imagePath: string): Promise<boolean> => {
+    return ipcRenderer.invoke('image:hasBackup', imagePath)
+  },
+
+  getImageDimensions: (imagePath: string): Promise<{ width: number; height: number; format: string; size: number }> => {
+    return ipcRenderer.invoke('image:getDimensions', imagePath)
+  },
+
+  getOriginalImageDimensions: (imagePath: string): Promise<{ width: number; height: number; format: string; size: number }> => {
+    return ipcRenderer.invoke('image:getOriginalDimensions', imagePath)
+  },
+
+  resizeImageToOriginal: (imagePath: string, targetWidth: number, targetHeight: number): Promise<{ success: boolean; message: string }> => {
+    return ipcRenderer.invoke('image:resizeToOriginal', imagePath, targetWidth, targetHeight)
+  },
+
+  // 备份管理
+  backupImage: (imagePath: string): Promise<boolean> => {
+    return ipcRenderer.invoke('image:backup', imagePath)
+  },
+
+  backupAllImages: (rootPath: string): Promise<{ total: number; success: number; skipped: number; failed: number }> => {
+    return ipcRenderer.invoke('backup:all', rootPath)
+  },
+
+  backupFolderImages: (folderPath: string): Promise<{ total: number; success: number; skipped: number; failed: number }> => {
+    return ipcRenderer.invoke('backup:folder', folderPath)
   }
 }
 

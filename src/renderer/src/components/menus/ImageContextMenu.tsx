@@ -1,4 +1,4 @@
-import { Tag, Edit3, Copy, FolderOpen, Check, X } from 'lucide-react'
+import { Tag, Edit3, Copy, FolderOpen, Check, X, Shield } from 'lucide-react'
 import type { MenuItem } from '@/components/common/ContextMenu'
 import type { ImageFile } from '@/types'
 import { useAppStore } from '@/stores/useAppStore'
@@ -57,6 +57,24 @@ export function useImageContextMenu({ image, onClose }: ImageContextMenuProps): 
     onClose()
   }
 
+  const handleBackupImage = async () => {
+    if (!image) return
+
+    try {
+      const success = await window.api.backupImage(image.path)
+
+      if (success) {
+        alert('备份成功！')
+      } else {
+        alert('备份失败或已存在备份文件')
+      }
+    } catch (error: any) {
+      alert(`备份失败：${error.message}`)
+    } finally {
+      onClose()
+    }
+  }
+
   return [
     {
       id: 'set-tag',
@@ -74,6 +92,17 @@ export function useImageContextMenu({ image, onClose }: ImageContextMenuProps): 
       divider: true
     },
     {
+      id: 'backup-image',
+      label: '备份原图',
+      icon: <Shield size={16} />,
+      onClick: handleBackupImage
+    },
+    {
+      id: 'divider-2',
+      label: '',
+      divider: true
+    },
+    {
       id: 'copy-path',
       label: '复制图片路径',
       icon: <Copy size={16} />,
@@ -86,7 +115,7 @@ export function useImageContextMenu({ image, onClose }: ImageContextMenuProps): 
       onClick: handleShowInExplorer
     },
     {
-      id: 'divider-2',
+      id: 'divider-3',
       label: '',
       divider: true
     },
